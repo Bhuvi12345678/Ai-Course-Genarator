@@ -17,33 +17,40 @@ function CourseCard({ course, refreshData, displayUser = false }) {
     try {
       // console.log("Course : " + course?.courseId);
 
-      // Delete Banner Image
       if (course?.courseBanner != "/placeholder.png") {
-        const filePath = course?.courseBanner
-          .replace(
-            "https://firebasestorage.googleapis.com/v0/b/explorer-1844f.firebasestorage.app/o/",
-            ""
-          )
-          .split("?")[0];
-        const fileRef = ref(storage, decodeURIComponent(filePath));
-
-        await deleteObject(fileRef);
-        // console.log("Image Deleted");
+        const extractStoragePath = (url) => {
+          try {
+            const u = new URL(url);
+            const m = u.pathname.match(/\/o\/(.+)$/);
+            if (m && m[1]) return decodeURIComponent(m[1].split("?")[0]);
+            const idx = u.pathname.indexOf("/o/");
+            if (idx !== -1) return decodeURIComponent(u.pathname.slice(idx + 3).split("?")[0]);
+            return null;
+          } catch {
+            return null;
+          }
+        };
+        const filePath = extractStoragePath(course?.courseBanner);
+        if (filePath) {
+          try {
+            const fileRef = ref(storage, filePath);
+            await deleteObject(fileRef);
+          } catch (_) {
+          }
+        }
       }
 
-      // Delete Course
-      const courseResponse = await db
-        .delete(CourseList)
-        .where(eq(CourseList.id, course?.id))
-        .returning({ id: CourseList?.id });
-
-      // console.log("Course Deleted : " + courseResponse);
-
-      // Delete Chapters
+      // Delete Chapters first (avoid FK constraint issues)
       const chapterResponse = await db
         .delete(Chapters)
         .where(eq(Chapters.courseId, course?.courseId))
         .returning({ id: Chapters?.id });
+
+      // Then delete Course
+      const courseResponse = await db
+        .delete(CourseList)
+        .where(eq(CourseList.id, course?.id))
+        .returning({ id: CourseList?.id });
 
       // console.log("Chapters Deleted : " + chapterResponse);
 
@@ -62,7 +69,7 @@ function CourseCard({ course, refreshData, displayUser = false }) {
         variant: "destructive",
         duration: 3000,
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
+        description: error?.message || "There was a problem with your request.",
       });
     }
   };
@@ -77,11 +84,12 @@ function CourseCard({ course, refreshData, displayUser = false }) {
         }
       >
         <Image
-          src={course?.courseBanner}
-          alt="course"
+          src={course?.courseBanner || "/placeholder.png"}
+          alt="course banner"
           width={300}
           height={200}
           className="w-full h-[200px] object-cover rounded-lg"
+          unoptimized
         />
       </Link>
 

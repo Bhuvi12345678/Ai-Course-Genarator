@@ -41,10 +41,30 @@ export const GenerateCourseLayout_AI = model.startChat({
   ],
 });
 
-// const result = await chatSession.sendMessage("INSERT_INPUT_HERE");
-// console.log(result.response.text());
-
-
+// Quiz generator chat session to produce multiple-choice questions based on supplied content
+export const GenerateQuiz_AI = model.startChat({
+  generationConfig,
+  history: [
+    {
+      role: "user",
+      parts: [
+        {
+          text:
+            "Create a multiple-choice quiz in strict JSON. Input will provide topic and content bullets. Return an object with 'questions' as an array. Each question must have: 'question' (string), 'options' (array of 4 concise strings), 'correctIndex' (0-3), and 'explanation' (string). No markdown, no code fences, valid JSON only.",
+        },
+      ],
+    },
+    {
+      role: "model",
+      parts: [
+        {
+          text:
+            '{"questions":[{"question":"What does OOP stand for?","options":["Object-Oriented Programming","Open Operational Protocol","Optimized Object Processing","Operational Oriented Process"],"correctIndex":0,"explanation":"OOP stands for Object-Oriented Programming."}]}'
+        }
+      ]
+    }
+  ]
+});
 
 export const GenerateChapterContent_AI = model.startChat({
   generationConfig,

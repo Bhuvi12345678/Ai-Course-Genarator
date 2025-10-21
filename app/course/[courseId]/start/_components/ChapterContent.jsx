@@ -115,6 +115,7 @@ import ReactMarkdown from "react-markdown";
 import { HiChevronDoubleRight, HiOutlineClipboardList } from "react-icons/hi";
 import "./youtubeAdjustments.css";
 import { Button } from "@/components/ui/button";
+import QuizPanel from "./QuizPanel";
 
 function ChapterContent({ chapter, content, handleSideBarFunction }) {
   const [selectedVideo, setSelectedVideo] = useState(0);
@@ -214,6 +215,8 @@ function ChapterContent({ chapter, content, handleSideBarFunction }) {
           </div>
         ))}
       </div>
+
+      <QuizPanel chapter={chapter} content={content} />
     </div>
   );
 }

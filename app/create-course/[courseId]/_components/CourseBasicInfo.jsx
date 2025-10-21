@@ -3,7 +3,8 @@ import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { HiOutlinePuzzle } from "react-icons/hi";
 import EditCourseBasicInfo from "./EditCourseBasicInfo";
-import { storage } from "@/configs/firebaseConfig";
+import { storage, auth } from "@/configs/firebaseConfig";
+import { signInAnonymously } from "firebase/auth";
 import {
   deleteObject,
   getDownloadURL,
@@ -22,21 +23,51 @@ function CourseBasicInfo({ course, refreshData, edit = true }) {
 
   const onFileChanged = async (e) => {
     try {
-      const file = e.target.files[0];
+      // Ensure we have an authenticated Firebase session before Storage calls
+      if (!auth.currentUser) {
+        try { await signInAnonymously(auth); } catch (_) {}
+      }
+      // Debug: log uid to confirm auth present
+      // console.log('Firebase auth uid:', auth.currentUser?.uid);
+
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
       setSelectedFile(URL.createObjectURL(file));
 
       // Delete Previous Image
       if (course?.courseBanner != "/placeholder.png") {
-        const filePath = course?.courseBanner
-          .replace(
-            "https://firebasestorage.googleapis.com/v0/b/explorer-1844f.firebasestorage.app/o/",
-            ""
-          )
-          .split("?")[0];
-        const fileRef = ref(storage, decodeURIComponent(filePath));
+        const extractStoragePath = (url) => {
+          try {
+            const u = new URL(url);
+            // Pattern: /v0/b/<bucket>/o/<encodedPath>
+            const m = u.pathname.match(/\/o\/(.+)$/);
+            if (m && m[1]) {
+              const withoutQuery = m[1].split("?")[0];
+              return decodeURIComponent(withoutQuery);
+            }
+            // Fallback: after '/o/' in pathname
+            const idx = u.pathname.indexOf("/o/");
+            if (idx !== -1) {
+              const tail = u.pathname.slice(idx + 3).split("?")[0];
+              return decodeURIComponent(tail);
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        };
 
-        await deleteObject(fileRef);
-        // console.log("Previous Image Deleted");
+        const filePath = extractStoragePath(course?.courseBanner);
+        if (filePath) {
+          try {
+            const fileRef = ref(storage, filePath);
+            await deleteObject(fileRef);
+            // console.log("Previous Image Deleted");
+          } catch (delErr) {
+            // Ignore delete errors (e.g., already deleted)
+            // console.warn('Delete previous banner failed:', delErr);
+          }
+        }
       }
 
       // Upload new image in storage
@@ -45,12 +76,6 @@ function CourseBasicInfo({ course, refreshData, edit = true }) {
 
       const snapshot = await uploadBytes(storageRef, file);
       // console.log("Uploaded Completed!");
-      toast({
-        variant: "success",
-        duration: 3000,
-        title: "Image Uploaded Successfully!",
-        description: "Image has been uploaded successfully.",
-      });
 
       const imageLink = await getDownloadURL(storageRef);
       // console.log("Image Link Generated!", imageLink);
@@ -61,13 +86,19 @@ function CourseBasicInfo({ course, refreshData, edit = true }) {
         .where(eq(CourseList.id, course?.id));
       // console.log(result);
       refreshData(true);
+      toast({
+        variant: "success",
+        duration: 3000,
+        title: "Image Uploaded Successfully!",
+        description: "Banner updated for this course.",
+      });
     } catch (error) {
       // console.log(error);
       toast({
         variant: "destructive",
         duration: 3000,
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
+        description: error?.message || "There was a problem with your request.",
       });
     }
   };
@@ -119,6 +150,7 @@ function CourseBasicInfo({ course, refreshData, edit = true }) {
               className={`w-full rounded-xl object-cover h-[250px] ${
                 edit ? "cursor-pointer" : ""
               }`}
+              unoptimized
             />
           </label>
           {edit && (

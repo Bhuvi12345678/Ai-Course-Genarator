@@ -10,7 +10,7 @@ import SelectCategory from "./_components/SelectCategory";
 import TopicDescription from "./_components/TopicDescription";
 import SelectOptions from "./_components/SelectOptions";
 import { UserInputContext } from "../_context/UserInputContext";
-import { GenerateCourseLayout_AI } from "@/configs/AiModel";
+// import { GenerateCourseLayout_AI } from "@/configs/AiModel"; // replaced by server API
 import LoadingDialog from "./_components/LoadingDialog";
 import { db } from "@/configs/db";
 import { CourseList } from "@/configs/schema";
@@ -80,29 +80,22 @@ function CreateCourse() {
   const GenerateCourseLayout = async () => {
     try {
       setLoading(true);
-      const BASIC_PROMPT =
-        "Generate A Course Tutorial on Following Details With field as Course Name, Description, Along with Chapter Name, about, Duration : \n";
-
-      const USER_INPUT_PROMPT =
-        "Category: " +
-        userCourseInput?.category +
-        ", Topic: " +
-        userCourseInput?.topic +
-        ", Level:" +
-        userCourseInput?.level +
-        ",Duration:" +
-        userCourseInput?.duration +
-        ",NoOfChapters:" +
-        userCourseInput?.noOfChapters +
-        ", in JSON format";
-
-      const FINAL_PROMPT = BASIC_PROMPT + USER_INPUT_PROMPT;
-      // console.log(FINAL_PROMPT);
-
-      const result = await GenerateCourseLayout_AI.sendMessage(FINAL_PROMPT);
-      // console.log(result.response.text());
-      // console.log(JSON.parse(result.response.text()));
-      SaveCourseLayoutInDB(JSON.parse(result.response?.text()));
+      const resp = await fetch("/api/course-layout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: userCourseInput?.category,
+          topic: userCourseInput?.topic,
+          level: userCourseInput?.level,
+          duration: userCourseInput?.duration,
+          noOfChapters: userCourseInput?.noOfChapters,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data?.error || "Failed to generate course layout");
+      }
+      SaveCourseLayoutInDB(data)
       toast({
         variant: "success",
         duration: 3000,
@@ -115,7 +108,7 @@ function CreateCourse() {
         variant: "destructive",
         duration: 3000,
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
+        description: error?.message || "There was a problem with your request.",
       });
     } finally {
       setLoading(false);

@@ -1,4 +1,4 @@
-import { pgTable, serial, json, varchar, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, json, varchar, boolean, integer, timestamp } from "drizzle-orm/pg-core";
 
 export const CourseList = pgTable("courseList", {
   id: serial("id").primaryKey(),
@@ -21,4 +21,15 @@ export const Chapters = pgTable("chapters", {
   chapterId: varchar("chapterId").notNull(),
   content: json("content").notNull(),
   videoId: json("videoId").notNull().$default("[]"),
+});
+
+export const QuizResults = pgTable("quizResults", {
+  id: serial("id").primaryKey(),
+  userId: varchar("userId").notNull(),
+  courseId: varchar("courseId").notNull(),
+  chapterId: varchar("chapterId").notNull(),
+  score: integer("score").notNull(),
+  total: integer("total").notNull(),
+  answers: json("answers").notNull(),
+  completedAt: timestamp("completedAt", { withTimezone: false }).defaultNow(),
 });

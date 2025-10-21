@@ -8,7 +8,7 @@ import CourseBasicInfo from "./_components/CourseBasicInfo";
 import CourseDetail from "./_components/CourseDetail";
 import ChapterList from "./_components/ChapterList";
 import { Button } from "@/components/ui/button";
-import { GenerateChapterContent_AI } from "@/configs/AiModel";
+// import { GenerateChapterContent_AI } from "@/configs/AiModel"; // replaced by server API
 import LoadingDialog from "../_components/LoadingDialog";
 import getVideos from "@/configs/service";
 import { useRouter } from "next/navigation";
@@ -78,51 +78,28 @@ function CourseLayout({ params }) {
           .returning({ id: Chapters?.id });
       }
 
+      const YT_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
+
       for (const [index, chapter] of chapters.entries()) {
         // console.log(`Generating Chapter Content for ${chapter?.ChapterName}`);
 
-        const PROMPT = `
-        Generate detailed content for the following topic in strict JSON format:
-        - Topic: ${course?.name}
-        - Chapter: ${chapter?.ChapterName}
-
-        The response must be a valid JSON object containing an array of objects with the following fields:
-        1. "title": A short and descriptive title for the subtopic.
-        2. "explanation": A detailed explanation of the subtopic.
-        3. "codeExample": A code example (if applicable) wrapped in <precode> tags, or an empty string if no code example is available.
-
-        Ensure:
-        - The JSON is valid and follows the specified format.
-        - The JSON is properly formatted with no syntax errors.
-        - The JSON contains the required fields.
-        - The JSON contains the correct data types.
-        - Proper escaping of special characters.
-        - No trailing commas or malformed syntax.
-        - The JSON is properly nested and structured.
-        - The response can be parsed directly using JSON.parse().
-
-        Example format:
-        {
-          "title": "Topic Title",
-          "chapters": [
-            {
-              "title": "Subtopic Title",
-              "explanation": "Detailed explanation here.",
-              "codeExample": "<precode>Code example here</precode>"
-            }
-          ]
+        // Server-side chapter content generation (Perplexity)
+        const resp = await fetch("/api/chapter-content", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: course?.name, chapterName: chapter?.ChapterName }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data?.error || `Failed to generate content for ${chapter?.ChapterName}`);
         }
-      `;
-
-        const result = await GenerateChapterContent_AI.sendMessage(PROMPT);
-        // console.log(result?.response?.text());
-        const content = JSON.parse(result?.response?.text());
+        const content = data;
 
         // Generate Video URL
 
         let videoId = null;
 
-        if (includeVideo === "Yes") {
+        if (includeVideo === "Yes" && YT_KEY) {
           // console.log(`Generating Video URL for ${chapter?.ChapterName}`);
           const resp = await getVideos(
             course?.name + ":" + chapter?.ChapterName
@@ -137,6 +114,9 @@ function CourseLayout({ params }) {
             resp[2]?.id?.videoId,
           ];
           // console.log(videoId);
+        } else if (includeVideo === "Yes" && !YT_KEY) {
+          // Skip video generation if key not present
+          console.warn("YouTube API key missing; skipping video generation");
         }
         // Save Chapter Content + Video URL
 
