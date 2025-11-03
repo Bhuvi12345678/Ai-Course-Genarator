@@ -6,14 +6,17 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
-    const { topic, bullets, count = 6 } = await request.json();
-    if (!bullets || !bullets.trim()) {
-      return NextResponse.json({ error: "Missing notes to generate quiz" }, { status: 400 });
+    const { topic, category, bullets, count = 6 } = await request.json();
+    if ((!bullets || !bullets.trim()) && (!topic || !topic.toString().trim())) {
+      return NextResponse.json({ error: "Provide either topic (and optional category) or notes to generate quiz" }, { status: 400 });
     }
 
     const PPLX_API_KEY = process.env.PPLX_API_KEY;
     const safeBullets = (bullets || "").toString().slice(0, 4000);
-    const prompt = `You are a quiz generator. Create ${count} multiple-choice questions STRICTLY from the notes below. Do NOT introduce any facts not present in the notes.\n\nTOPIC: ${topic}\nNOTES (authoritative, only source of truth):\n- ${safeBullets}\n\nReturn ONLY valid JSON (no markdown) shaped as: {\"questions\":[{\"question\":\"string\",\"options\":[\"string\",\"string\",\"string\",\"string\"],\"correctIndex\":0-3,\"explanation\":\"string\"}]}`;
+    const baseJsonShape = '{"questions":[{"question":"string","options":["string","string","string","string"],"correctIndex":0-3,"explanation":"string"}]}'
+    const prompt = (bullets && bullets.trim().length)
+      ? `You are a quiz generator. Create ${count} multiple-choice questions STRICTLY from the notes below. Do NOT introduce any facts not present in the notes.\n\nTOPIC: ${topic || "General"}\nNOTES (authoritative, only source of truth):\n- ${safeBullets}\n\nReturn ONLY valid JSON (no markdown) shaped as: ${baseJsonShape}`
+      : `You are a quiz generator. Create ${count} multiple-choice questions for the TOPIC and CATEGORY below. Ensure coverage of fundamentals and practical applications suitable for learners in this category. Balance difficulty and avoid obscure trivia.\n\nTOPIC: ${topic}\nCATEGORY: ${category || "General"}\n\nReturn ONLY valid JSON (no markdown) shaped as: ${baseJsonShape}`;
 
     let raw = "";
     if (PPLX_API_KEY) {

@@ -3,7 +3,152 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  @apply antialiased;
+}
+
+/* Quiz Component Styling */
+.quiz-container {
+  @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
+.quiz-header {
+  @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-6 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800;
+}
+
+.quiz-title {
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
+}
+
+.quiz-description {
+  @apply mt-2 text-gray-600 dark:text-gray-400;
+}
+
+.topic-tabs {
+  @apply flex flex-wrap gap-2 mb-6;
+}
+
+.topic-tab {
+  @apply px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ease-in-out;
+  @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-primary/50;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+}
+
+.topic-tab.active {
+  @apply bg-primary text-white border-primary hover:bg-primary/90;
+}
+
+.quiz-card {
+  @apply bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6 mb-6;
+  @apply transition-all duration-200 ease-in-out hover:shadow-md;
+}
+
+.quiz-question {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-4;
+}
+
+.quiz-options {
+  @apply grid md:grid-cols-2 gap-3 mb-4;
+}
+
+.option-button {
+  @apply text-left p-4 rounded-lg transition-all duration-200 ease-in-out border;
+  @apply hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-primary/50;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+  @apply disabled:opacity-70 disabled:cursor-not-allowed;
+}
+
+.option-button.selected {
+  @apply border-primary bg-primary/5 dark:bg-primary/10;
+}
+
+.option-button.correct {
+  @apply border-green-500 bg-green-50 dark:bg-green-900/30 text-green-900 dark:text-green-100;
+}
+
+.option-button.incorrect {
+  @apply border-red-500 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100 line-through;
+}
+
+.quiz-explanation {
+  @apply mt-3 p-4 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 border border-blue-100 dark:border-blue-800/50;
+  @apply animate-fadeIn;
+}
+
+.quiz-results {
+  @apply mt-8 p-6 rounded-xl bg-gradient-to-r from-primary/5 to-secondary/5 dark:from-primary/10 dark:to-secondary/10 border border-gray-100 dark:border-gray-800;
+}
+
+.quiz-score {
+  @apply text-4xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+}
+
+.quiz-percentage {
+  @apply text-5xl font-extrabold text-center mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+}
+
+.quiz-feedback {
+  @apply text-center text-gray-600 dark:text-gray-300 mb-6;
+}
+
+.quiz-recommendation {
+  @apply p-4 rounded-lg text-sm font-medium mt-4;
+}
+
+.quiz-recommendation.success {
+  @apply bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-100 dark:border-green-900/50;
+}
+
+.quiz-recommendation.warning {
+  @apply bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 border border-yellow-100 dark:border-yellow-900/50;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Loading state */
+.quiz-loading {
+  @apply flex justify-center items-center py-12;
+}
+
+.quiz-loading-spinner {
+  @apply w-10 h-10 border-4 border-primary/20 rounded-full border-t-primary animate-spin;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .quiz-options {
+    @apply grid-cols-1;
+  }
+  
+  .quiz-header {
+    @apply p-4;
+  }
+  
+  .quiz-card {
+    @apply p-4;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500;
 }
 
 @layer base {

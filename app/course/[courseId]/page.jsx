@@ -11,12 +11,16 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 function Course({ params }) {
   const Params = React.use(params);
   const { toast } = useToast();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [visitedCount, setVisitedCount] = useState(0);
+  const [chaptersCount, setChaptersCount] = useState(0);
   const router = useRouter();
   useEffect(() => {
     params && GetCourse();
@@ -41,6 +45,14 @@ function Course({ params }) {
       // console.log(result[0]);
       setCourse(result[0]);
       setLoading(false);
+      try {
+        const ct = result[0]?.courseOutput?.Chapters?.length || 0;
+        setChaptersCount(ct);
+        const key = `progress:${result[0]?.courseId}`;
+        const raw = localStorage.getItem(key);
+        const arr = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
+        setVisitedCount(arr.length);
+      } catch (_) {}
     } catch (error) {
       // console.log(error);
       toast({
@@ -78,6 +90,17 @@ function Course({ params }) {
             <CourseBasicInfo course={course} edit={false} />
             <CourseDetail course={course} />
             <ChapterList course={course} edit={false} />
+            <div className="flex items-center justify-end gap-3 my-6">
+              {chaptersCount > 0 && visitedCount >= chaptersCount ? (
+                <Link href={`/course/${Params?.courseId}/final-quiz`}>
+                  <Button>Final Quiz</Button>
+                </Link>
+              ) : (
+                <Button disabled title="Finish all chapters to unlock">
+                  Final Quiz
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <div>

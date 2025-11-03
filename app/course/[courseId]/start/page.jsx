@@ -16,6 +16,7 @@ function CourseStart({ params }) {
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [selectedChapterContent, setSelectedChapterContent] = useState(null);
   const [handleSidebar, setHandleSidebar] = useState(false);
+  const [visitedIdxs, setVisitedIdxs] = useState([]);
   const [courseLoading, setCourseLoading] = useState(true);
   const [contentLoading, setContentLoading] = useState(true);
   const { toast } = useToast();
@@ -33,6 +34,17 @@ function CourseStart({ params }) {
       const firstChapter = course?.courseOutput?.Chapters[0];
       setSelectedChapter(firstChapter);
       GetSelectedChapterContent(0);
+      try {
+        const key = `progress:${course?.courseId}`;
+        const raw = localStorage.getItem(key);
+        const arr = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
+        setVisitedIdxs(arr);
+        if (!arr.includes(0)) {
+          const next = Array.from(new Set([...arr, 0]));
+          localStorage.setItem(key, JSON.stringify(next));
+          setVisitedIdxs(next);
+        }
+      } catch (_) {}
     }
   }, [course]);
 
@@ -133,9 +145,19 @@ function CourseStart({ params }) {
                   onClick={() => {
                     setSelectedChapter(chapter);
                     GetSelectedChapterContent(index);
+                    try {
+                      const key = `progress:${course?.courseId}`;
+                      const raw = localStorage.getItem(key);
+                      const arr = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
+                      if (!arr.includes(index)) {
+                        const next = Array.from(new Set([...arr, index]));
+                        localStorage.setItem(key, JSON.stringify(next));
+                        setVisitedIdxs(next);
+                      }
+                    } catch (_) {}
                   }}
                 >
-                  <ChapterListCard chapter={chapter} index={index} />
+                  <ChapterListCard chapter={chapter} index={index} visited={visitedIdxs.includes(index)} />
                 </div>
               ))}
         </div>

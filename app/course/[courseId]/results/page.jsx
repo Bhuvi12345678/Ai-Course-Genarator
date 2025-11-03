@@ -18,7 +18,16 @@ function CourseResults({ params }) {
         const rows = await db.select().from(CourseList).where(eq(CourseList.courseId, Params?.courseId));
         const c = rows?.[0];
         setCourse(c);
-        const resp = await fetch(`/api/quiz-results?courseId=${Params?.courseId}`);
+        let anonId = null;
+        try {
+          anonId = localStorage.getItem("anonId");
+          if (!anonId) {
+            anonId = (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `anon_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+            localStorage.setItem("anonId", anonId);
+          }
+        } catch (_) {}
+        const query = new URLSearchParams({ courseId: Params?.courseId, ...(anonId ? { anonId } : {}) }).toString();
+        const resp = await fetch(`/api/quiz-results?${query}`);
         const data = await resp.json();
         if (!resp.ok) throw new Error(data?.error || "Failed to fetch results");
         setResults(Array.isArray(data?.results) ? data.results : []);
@@ -40,20 +49,6 @@ function CourseResults({ params }) {
   const chaptersCount = course?.courseOutput?.Chapters?.length || 0;
   const completedCount = results?.length || 0;
   const allDone = chaptersCount > 0 && completedCount >= chaptersCount;
-
-  const weakChapters = useMemo(() => {
-    const byChapter = new Map();
-    results.forEach((r) => byChapter.set(r.chapterId, r));
-    return (course?.courseOutput?.Chapters || [])
-      .filter((ch, idx) => {
-        const key = String(ch?.ChapterName || idx);
-        const r = byChapter.get(key);
-        if (!r) return false;
-        const pct = r.total ? (r.score * 100) / r.total : 0;
-        return pct < 60;
-      })
-      .slice(0, 4);
-  }, [course, results]);
 
   return (
     <div className="md:ml-72 p-8">
@@ -99,55 +94,6 @@ function CourseResults({ params }) {
               </div>
             </div>
           )}
-
-          <div className="mb-6">
-            <h2 className="font-semibold text-lg mb-2">Per-chapter scores</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {(course?.courseOutput?.Chapters || []).map((ch, idx) => {
-                const cid = String(ch?.ChapterName || idx);
-                const r = results.find((x) => x.chapterId === cid);
-                const label = `${idx + 1}. ${ch?.ChapterName}`;
-                return (
-                  <div key={cid} className="border rounded-md p-3 bg-white flex items-center justify-between">
-                    <span className="text-sm text-gray-800">{label}</span>
-                    <span className={`text-xs px-2 py-1 rounded border ${r ? "border-green-600 text-green-700 bg-green-50" : "border-gray-300 text-gray-600 bg-gray-50"}`}>
-                      {r ? `${r.score}/${r.total}` : "Not attempted"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="font-semibold text-lg mb-2">Recommendations</h2>
-            {weakChapters.length === 0 ? (
-              <p className="text-gray-600 text-sm">No recommendations right now. Keep up the great work!</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {weakChapters.map((ch, idx) => {
-                  const title = ch?.ChapterName || `Chapter ${idx + 1}`;
-                  const links = [
-                    { label: "FreeCodeCamp", url: `https://www.freecodecamp.org/learn/` },
-                    { label: "MDN Docs", url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(title)}` },
-                    { label: "YouTube", url: `https://www.youtube.com/results?search_query=${encodeURIComponent(title)}` },
-                  ];
-                  return (
-                    <div key={idx} className="border rounded-md p-3 bg-white">
-                      <p className="font-medium text-sm mb-2">{title}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {links.map((l, i) => (
-                          <a key={i} href={l.url} target="_blank" rel="noreferrer" className="text-primary text-sm underline">
-                            {l.label}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
         </>
       )}
 

@@ -96,8 +96,8 @@ function CourseLayout({ params }) {
         const content = data;
 
         // Generate Video URL
-
-        let videoId = null;
+        // Ensure non-null default to satisfy NOT NULL constraint in DB
+        let videoId = [];
 
         if (includeVideo === "Yes" && YT_KEY) {
           // console.log(`Generating Video URL for ${chapter?.ChapterName}`);
@@ -115,7 +115,7 @@ function CourseLayout({ params }) {
           ];
           // console.log(videoId);
         } else if (includeVideo === "Yes" && !YT_KEY) {
-          // Skip video generation if key not present
+          // Skip video generation if key not present; keep [] to avoid NOT NULL violation
           console.warn("YouTube API key missing; skipping video generation");
         }
         // Save Chapter Content + Video URL
